@@ -1,0 +1,54 @@
+pipeline {
+    agent { docker { image 'python:3.12.6-alpine3.20' } }
+    
+    properties([
+        parameters([
+            string (defaultValue: ' ', description: 'Input link to revision 1.', name: 'target_1'),
+            string (defaultValue: ' ', description: 'Input link to revision 2.', name: 'target_2')
+        ])
+    ])
+    
+    stages {
+        stage('Checkout'){
+            cleanWs()
+            checkout scm
+        }
+        try{
+            stage('Comparing artifacts') {
+                sh """ 
+                #!/bin/bash  -xe
+
+                #split from the revision - TBD
+                git clone ${params.target_1} 
+                git checkout rev 
+                git clone ${params.target_2} 
+                git checkout rev 
+
+                #get location of both folders
+                folder_1 = 
+                folder_2 = 
+
+                pwd
+                chmod +x compare.py
+                python3 -u compare.py -f1 ${folder_1} -f2 ${folder_2}
+                """           
+            }
+        }
+        catch(e){
+            echo "Caught: ${e}"
+            currentBuild.result = "FAILURE"
+            error("[FAILED] Compare failed!")
+        }
+        try{
+            stage('Upload') {
+
+            } 
+        }
+        catch(e){
+            echo "Caught: ${e}"
+            currentBuild.result = "FAILURE"
+            error("[FAILED] Upload failed!")
+        }
+    }
+}
+
