@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+    
+    parameters{
+        string (defaultValue: ' ', description: 'Input 1st repository url, ex. https://github.com/xxx/Repo_1', name: 'REPO_1')
+        string (defaultValue: ' ', description: 'Input revision from 1st repository', name: 'REV_1')
+        string (defaultValue: ' ', description: 'Input 2nd repository url, ex. https://github.com/xxx/Repo_2', name: 'REPO_2')
+        string (defaultValue: ' ', description: 'Input revision from 2nd repository', name: 'REV_2')
+    }
+    
+    stages {
+        stage('Checkout'){
+            steps {
+                cleanWs()
+                checkout scm
+            }
+        }
+        
+        stage('Comparing artifacts') {
+            steps {
+                script {
+                    try{
+                        bat '''
+                            set suffix=.git
+
+                            set join_1=%REPO_1%%suffix%
+                            echo %join_1%
+                            set join_2=%REPO_2%%suffix%
+                            echo %join_2%
+
+                            for %%a in ("%REPO_1%") do (
+                            set "urlPath_1=!REPO_1:%%~NXa=!"
+                            set "folderName_1=%%~NXa"
+                            )
+                            echo Folder name 1: "%folderName_1%"
+
+                            for %%a in ("%REPO_2%") do (
+                            set "urlPath_2=!REPO_2:%%~NXa=!"
+                            set "folderName_2=%%~NXa"
+                            )
+                            echo Folder name 2: "%folderName_2%"
+
+                            git clone %join_1%
+                            cd %folderName_1%
+                            git checkout %REV_1%
+                            cd ..
+                            git clone %join_2%
+                            cd %folderName_2%
+                            git checkout %REV_2%
+                            cd ..
+
+                            python compare.py -f1 %folderName_1% -f2 %folderName_2%
+                        '''
+                    }
+                    catch(e){
+                        echo "Caught: ${e}"
+                        currentBuild.result = "FAILURE"
+                        error("[FAILED] Compare failed! Check if unput parameters are correct! ")
+                    }
+                }
+            }
+        }        
+    }
+}
+
