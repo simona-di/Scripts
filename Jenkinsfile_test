@@ -41,15 +41,22 @@ pipeline {
                             echo Folder name 2: "%folderName_2%"
 
                             git clone %join_1%
+                            if errorlevel 1 goto Quit
                             cd %folderName_1%
                             git checkout %REV_1%
+                            if errorlevel 1 goto Quit
                             cd ..
                             git clone %join_2%
+                            if errorlevel 1 goto Quit
                             cd %folderName_2%
                             git checkout %REV_2%
+                            if errorlevel 1 goto Quit
                             cd ..
 
                             python compare.py -f1 %folderName_1% -f2 %folderName_2%
+
+                            :Quit
+                            exit /b 1
                         '''
                     }
                     catch(e){
