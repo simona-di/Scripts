@@ -1,6 +1,9 @@
 pipeline {
     agent any
-    
+    tools {
+        jfrog 'jfrog-cli'
+    }
+
     parameters{
         string (defaultValue: ' ', description: 'Input 1st repository url, ex. https://github.com/xxx/Repo_1', name: 'REPO_1')
         string (defaultValue: ' ', description: 'Input revision from 1st repository', name: 'REV_1')
@@ -56,17 +59,23 @@ pipeline {
                             python compare.py -f1 %folderName_1% -f2 %folderName_2%
 
                             :Quit
-                            exit /b 1
                         '''
                     }
                     catch(e){
                         echo "Caught: ${e}"
                         currentBuild.result = "FAILURE"
-                        error("[FAILED] Compare failed! Check if unput parameters are correct! ")
+                        error("[FAILED] Compare failed! Check if input parameters are correct! ")
                     }
                 }
             }
-        }        
+        }
+        stage('Upload'){
+            steps{
+                // Upload all files in the target directory to the my-repo Artifactory repository.
+                jf 'rt u result.html compare-generic-local/compare_git_repos/${BUILD_ID}/'
+                jf 'rt u result.json compare-generic-local/compare_git_repos/${BUILD_ID}/'
+            }
+        }
     }
 }
 
